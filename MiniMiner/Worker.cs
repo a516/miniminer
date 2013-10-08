@@ -11,9 +11,8 @@ namespace MiniMiner
         private const uint BatchSize = 100000;
         private readonly int _workerID;
 
-
         private readonly object _locker = new object();
-        private bool _shouldStop = false;
+        private bool _shouldStop;
 
         public Worker(Pool pool, int workerID)
         {
@@ -28,10 +27,10 @@ namespace MiniMiner
 		
 		public void Work()
 		{
-			while (!_shouldStop)
+			while (!_shouldStop && _pool != null)
             {
                 if (_work == null || _work.Age > MaxAgeTicks)
-                    _work = GetWork();
+                    _work = _pool.GetWork();
 
                 if (_work.FindShare(ref _nonce, BatchSize))
                 {
@@ -54,7 +53,7 @@ namespace MiniMiner
         private void PrintCurrentState()
         {
             Program.ClearConsole();
-			Program.Print("Worker" + _workerID + "Data: " + Utils.ToString(_work.Data));
+			Program.Print("Worker " + _workerID + " Data: " + Utils.ToString(_work.Data));
             Program.Print(
                 string.Concat("Nonce: ", 
                 Utils.ToString(_nonce), "/", 
@@ -75,11 +74,6 @@ namespace MiniMiner
             Program.Print("Hash: " + Utils.ToString(_work.Hash));
             Program.Print("Sending Share to Pool...");
             Program.Print(_pool.SendShare(share) ? "Server accepted the Share!" : "Server declined the Share!");
-        }
-
-        private Work GetWork()
-        {
-            return _pool.GetWork();
         }
     }
 }

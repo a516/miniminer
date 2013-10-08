@@ -1,11 +1,25 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 
 namespace MiniMiner
 {
     public class Work
     {
-        public Work(byte[] data)
+        private const int Queuecount = 4;
+        private static readonly Queue<Work> WorkQueue = new Queue<Work>();
+
+        public static Work GetWork(Pool pool)
+        {
+            if (WorkQueue.Count == 0)
+                for (var x = 0; x < Queuecount; ++x)
+                    WorkQueue.Enqueue(new Work(pool.ParseData()));
+
+            WorkQueue.Enqueue(new Work(pool.ParseData()));
+            return WorkQueue.Dequeue();
+        }
+
+        private Work(byte[] data)
         {
             Data = data;
             Current = (byte[])data.Clone();
@@ -27,8 +41,7 @@ namespace MiniMiner
                 BitConverter.GetBytes(nonce).CopyTo(Current, _nonceOffset);
                 var doubleHash = Sha256(Sha256(Current));
 
-                //count trailing bytes that are zero
-                var zeroBytes = 0;
+                var zeroBytes = 0; /* count trailing bytes that are zero */
                 for (var i = 31; i >= 28; i--, zeroBytes++)
                     if(doubleHash[i] > 0)
                         break;

@@ -58,13 +58,13 @@ namespace MiniMiner
         public void StartWorkers()
         {
 			var threads = Environment.ProcessorCount;
-			var _workers = new List<Worker>();
+			var workers = new List<Worker>();
 			var tasks = new List<Thread>();
 
 			for (var i = 0; i < threads; ++i)
 			{
-				_workers.Add(new Worker(this, i));
-				tasks.Add(new Thread(_workers[i].Work) { IsBackground = true });
+				workers.Add(new Worker(this, i));
+				tasks.Add(new Thread(workers[i].Work) { IsBackground = true });
                 tasks[i].Start();
             }
 
@@ -76,33 +76,38 @@ namespace MiniMiner
 				switch(input)
 				{
 				case "+":
-					_workers.Add(new Worker(this, _workers.Count));
-					tasks.Add(new Thread(_workers[_workers.Count-1].Work) { IsBackground = true });
+					workers.Add(new Worker(this, workers.Count));
+					tasks.Add(new Thread(workers[workers.Count-1].Work) { IsBackground = true });
 					tasks[tasks.Count-1].Start();
 					break;
 				case "-":
-					if (_workers.Count > 0)
+					if (workers.Count > 0)
 					{
-						var id = _workers.Count-1;
-						_workers[id].Stop();
+						var id = workers.Count-1;
+						workers[id].Stop();
 						tasks[id].Join();
-						_workers.RemoveAt(id);
+						workers.RemoveAt(id);
 						tasks.RemoveAt(id);
 					}
 					break;
 				}
             }
 
-            foreach (var w in _workers)
+            foreach (var w in workers)
                 w.Stop();
 
 			foreach (var t in tasks)
 				t.Join();
         }
-        
+
         public Work GetWork(bool silent = false)
         {
-            return new Work(ParseData(InvokeMethod("getwork")));
+            return Work.GetWork(this);
+        }
+
+        public byte[] ParseData()
+        {
+            return ParseData(InvokeMethod("getwork"));
         }
 
         private static byte[] ParseData(string json)
