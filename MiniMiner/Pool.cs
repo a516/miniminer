@@ -59,8 +59,8 @@ namespace MiniMiner
 
         public void StartWorkers()
         {
-            _workers = new Worker[1];
-            var tasks = new Task[1];
+            _workers = new Worker[Environment.ProcessorCount];
+            var tasks = new Task[Environment.ProcessorCount];
 
             for (var i = 0; i < Environment.ProcessorCount; ++i)
             {

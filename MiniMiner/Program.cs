@@ -43,7 +43,7 @@ namespace MiniMiner
             ClearConsole();
             Print("Chose a Mining Pool 'user:password@url:port' or leave empty to skip.");
             Console.Write("Select Pool: ");
-            var login = ReadLineDefault("lithander_2:foo@btcguild.com:8332");
+            var login = ReadLineDefault(System.Configuration.ConfigurationManager.AppSettings["DefaultLogin"]);
             return new Pool(login);
         }
 
