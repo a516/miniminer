@@ -13,17 +13,22 @@ namespace MiniMiner
 
 
         private readonly object _locker = new object();
-        private Boolean _shouldStop;
+        private bool _shouldStop = false;
 
         public Worker(Pool pool, int workerID)
         {
             _workerID = workerID;
             _pool = pool;
-        }
-
-        public void Work()
-        {
-            while (!_shouldStop)
+			Program.ClearConsole();
+			Program.Print("Worker" + _workerID+" Requesting Work from Pool...");
+			Program.Print("Server URL: " + _pool.Url);
+			Program.Print("User: " + _pool.User);
+			Program.Print("Password: " + _pool.Password);
+		}
+		
+		public void Work()
+		{
+			while (!_shouldStop)
             {
                 if (_work == null || _work.Age > MaxAgeTicks)
                     _work = GetWork();
@@ -49,7 +54,7 @@ namespace MiniMiner
         private void PrintCurrentState()
         {
             Program.ClearConsole();
-            Program.Print(_workerID + "Data: " + Utils.ToString(_work.Data));
+			Program.Print("Worker" + _workerID + "Data: " + Utils.ToString(_work.Data));
             Program.Print(
                 string.Concat("Nonce: ", 
                 Utils.ToString(_nonce), "/", 
@@ -70,17 +75,10 @@ namespace MiniMiner
             Program.Print("Hash: " + Utils.ToString(_work.Hash));
             Program.Print("Sending Share to Pool...");
             Program.Print(_pool.SendShare(share) ? "Server accepted the Share!" : "Server declined the Share!");
-            Console.Write("Hit 'Enter' to continue...");
-            Console.ReadLine();
         }
 
         private Work GetWork()
         {
-            Program.ClearConsole();
-            Program.Print(_workerID+"Requesting Work from Pool...");
-            Program.Print("Server URL: " + _pool.Url);
-            Program.Print("User: " + _pool.User);
-            Program.Print("Password: " + _pool.Password);
             return _pool.GetWork();
         }
     }

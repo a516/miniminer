@@ -58,19 +58,20 @@ namespace MiniMiner
 
         public void StartWorkers()
         {
-            _workers = new Worker[Environment.ProcessorCount];
-            var tasks = new Thread[Environment.ProcessorCount];
+			var threads = Environment.ProcessorCount;
+			_workers = new Worker[threads];
+			var tasks = new Thread[threads];
 
-            for (var i = 0; i < Environment.ProcessorCount; ++i)
-            {
+			for (var i = 0; i < threads; ++i)
+			{
                 _workers[i] = new Worker(this, i);
-                tasks[i] = new Thread(_workers[i].Work) { IsBackground = true };
+				tasks[i] = new Thread(_workers[i].Work);// { IsBackground = true };
                 tasks[i].Start();
             }
 
             var input = string.Empty;
 
-            while (input.Equals("x", StringComparison.CurrentCultureIgnoreCase))
+            while (!input.Equals("x", StringComparison.CurrentCultureIgnoreCase))
             {
                 input = Console.ReadKey().KeyChar.ToString();
             }
