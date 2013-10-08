@@ -12,7 +12,7 @@ namespace MiniMiner
         private readonly int _workerID;
 
 
-        private object _locker;
+        private readonly object _locker = new object();
         private Boolean _shouldStop;
 
         public Worker(Pool pool, int workerID)
