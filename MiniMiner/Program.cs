@@ -28,12 +28,12 @@ namespace MiniMiner
             }
         }
 
-
         public static void ClearConsole()
         {
             Console.Clear();
             Console.WriteLine("*****************************");
             Console.WriteLine("*** Minimal Bitcoin Miner ***");
+            Console.WriteLine("*** press x to exit  ***");
             Console.WriteLine("*****************************");
             Console.WriteLine();
         }

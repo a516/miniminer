@@ -9,15 +9,21 @@ namespace MiniMiner
         Work _work;
         uint _nonce;
         private const uint BatchSize = 100000;
+        private readonly int _workerID;
 
-        public Worker(Pool pool)
+
+        private object _locker;
+        private Boolean _shouldStop;
+
+        public Worker(Pool pool, int workerID)
         {
+            _workerID = workerID;
             _pool = pool;
         }
 
         public void Work()
         {
-            while (true)
+            while (!_shouldStop)
             {
                 if (_work == null || _work.Age > MaxAgeTicks)
                     _work = GetWork();
@@ -31,11 +37,19 @@ namespace MiniMiner
             }
         }
 
+        public void Stop()
+        {
+            lock (_locker)
+            {
+                _shouldStop = true;
+            }
+        }
+
         private static DateTime _lastPrint = DateTime.Now;
         private void PrintCurrentState()
         {
             Program.ClearConsole();
-            Program.Print("Data: " + Utils.ToString(_work.Data));
+            Program.Print(_workerID + "Data: " + Utils.ToString(_work.Data));
             Program.Print(
                 string.Concat("Nonce: ", 
                 Utils.ToString(_nonce), "/", 
@@ -50,7 +64,7 @@ namespace MiniMiner
         private void SendShare(byte[] share)
         {
             Program.ClearConsole();
-            Program.Print("*** Found Valid Share ***");
+            Program.Print("*** Worker "+_workerID+" Found Valid Share ***");
             Program.Print("Share: " + Utils.ToString(_work.Current));
             Program.Print("Nonce: " + Utils.ToString(_nonce));
             Program.Print("Hash: " + Utils.ToString(_work.Hash));
@@ -63,7 +77,7 @@ namespace MiniMiner
         private Work GetWork()
         {
             Program.ClearConsole();
-            Program.Print("Requesting Work from Pool...");
+            Program.Print(_workerID+"Requesting Work from Pool...");
             Program.Print("Server URL: " + _pool.Url);
             Program.Print("User: " + _pool.User);
             Program.Print("Password: " + _pool.Password);

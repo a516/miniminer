@@ -4,7 +4,6 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace MiniMiner
 {
@@ -60,15 +59,27 @@ namespace MiniMiner
         public void StartWorkers()
         {
             _workers = new Worker[Environment.ProcessorCount];
-            var tasks = new Task[Environment.ProcessorCount];
+            var tasks = new Thread[Environment.ProcessorCount];
 
             for (var i = 0; i < Environment.ProcessorCount; ++i)
             {
-                _workers[i] = new Worker(this);
-                tasks[i] = Task.Factory.StartNew(_workers[i].Work, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+                _workers[i] = new Worker(this, i);
+                tasks[i] = new Thread(_workers[i].Work) { IsBackground = true };
+                tasks[i].Start();
             }
 
-            Task.WaitAll(tasks);
+            var input = string.Empty;
+
+            while (input.Equals("x", StringComparison.CurrentCultureIgnoreCase))
+            {
+                input = Console.ReadKey().KeyChar.ToString();
+            }
+
+            foreach (var w in _workers)
+                w.Stop();
+
+            for (var x = 0; x < Environment.ProcessorCount; ++x)
+                tasks[x].Join();
         }
         
         public Work GetWork(bool silent = false)
