@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -9,8 +10,6 @@ namespace MiniMiner
 {
     public class Pool
     {
-        private static Worker[] _workers;
-
         public Uri Url;
         public string User;
         public string Password;
@@ -59,13 +58,13 @@ namespace MiniMiner
         public void StartWorkers()
         {
 			var threads = Environment.ProcessorCount;
-			_workers = new Worker[threads];
-			var tasks = new Thread[threads];
+			var _workers = new List<Worker>();
+			var tasks = new List<Thread>();
 
 			for (var i = 0; i < threads; ++i)
 			{
-                _workers[i] = new Worker(this, i);
-				tasks[i] = new Thread(_workers[i].Work);// { IsBackground = true };
+				_workers.Add(new Worker(this, i));
+				tasks.Add(new Thread(_workers[i].Work) { IsBackground = true });
                 tasks[i].Start();
             }
 
@@ -74,13 +73,31 @@ namespace MiniMiner
             while (!input.Equals("x", StringComparison.CurrentCultureIgnoreCase))
             {
                 input = Console.ReadKey().KeyChar.ToString();
+				switch(input)
+				{
+				case "+":
+					_workers.Add(new Worker(this, _workers.Count));
+					tasks.Add(new Thread(_workers[_workers.Count-1].Work) { IsBackground = true });
+					tasks[tasks.Count-1].Start();
+					break;
+				case "-":
+					if (_workers.Count > 0)
+					{
+						var id = _workers.Count-1;
+						_workers[id].Stop();
+						tasks[id].Join();
+						_workers.RemoveAt(id);
+						tasks.RemoveAt(id);
+					}
+					break;
+				}
             }
 
             foreach (var w in _workers)
                 w.Stop();
 
-            for (var x = 0; x < Environment.ProcessorCount; ++x)
-                tasks[x].Join();
+			foreach (var t in tasks)
+				t.Join();
         }
         
         public Work GetWork(bool silent = false)

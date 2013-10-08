@@ -25,11 +25,11 @@ namespace MiniMiner
         public static void ClearConsole()
         {
             Console.Clear();
-            Console.WriteLine("*****************************");
-            Console.WriteLine("*** Minimal Bitcoin Miner ***");
-            Console.WriteLine("*** press x to exit  ***");
-            Console.WriteLine("*****************************");
-            Console.WriteLine();
+			Console.WriteLine("**********************************************************");
+			Console.WriteLine("***              Minimal Bitcoin Miner                 ***");
+            Console.WriteLine("** press x to exit, + adds a thread, - removes a thread **");
+			Console.WriteLine("**********************************************************");
+			Console.WriteLine();
         }
 
         private static Pool SelectPool()
