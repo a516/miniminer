@@ -64,7 +64,7 @@ namespace MiniMiner
 			for (var i = 0; i < threads; ++i)
 			{
 				workers.Add(new Worker(this, i));
-				tasks.Add(new Thread(workers[i].Work) { IsBackground = true });
+				tasks.Add(new Thread(workers[i].Work));
                 tasks[i].Start();
             }
 
