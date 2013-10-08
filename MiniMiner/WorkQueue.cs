@@ -20,9 +20,8 @@ namespace MiniMiner
 
         public void StartThread()
         {
-            if (_workerQueue.Count == 0)
-                for (var x = 0; x < Queuecount; ++x)
-                    _workerQueue.Enqueue(new Work(_pool.ParseData()));
+            for (var x = 0; x < Queuecount; ++x)
+                _workerQueue.Enqueue(new Work(_pool.ParseData()));
 
             while (!stop)
             {
@@ -39,6 +38,8 @@ namespace MiniMiner
 
         public Work GetWork(Pool pool)
         {
+            while (_workerQueue.Count == 0)
+                Thread.Sleep(100);
             return _workerQueue.Dequeue();
         }
     }

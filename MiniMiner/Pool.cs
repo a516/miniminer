@@ -59,6 +59,9 @@ namespace MiniMiner
 
         public void StartWorkers()
         {
+            var queueThread = new Thread(_poolWorkQueue.StartThread);
+            queueThread.Start();
+
 			var threads = Environment.ProcessorCount;
 			var workers = new List<Worker>();
 			var tasks = new List<Thread>();
@@ -70,9 +73,7 @@ namespace MiniMiner
                 tasks[i].Start();
             }
 
-            var queueThread = new Thread(_poolWorkQueue.StartThread);
-            queueThread.Start();
-
+            
             var input = string.Empty;
 
             while (!input.Equals("x", StringComparison.CurrentCultureIgnoreCase))
