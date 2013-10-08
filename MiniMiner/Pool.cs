@@ -13,6 +13,7 @@ namespace MiniMiner
         public Uri Url;
         public string User;
         public string Password;
+        private readonly WorkQueue _poolWorkQueue;
 
         public Pool(string login)
         {
@@ -24,6 +25,7 @@ namespace MiniMiner
             Url = new Uri(url);
             User = user;
             Password = password;
+            _poolWorkQueue = new WorkQueue(this);
         }
 
         private string InvokeMethod(string method, string paramString = null)
@@ -68,6 +70,9 @@ namespace MiniMiner
                 tasks[i].Start();
             }
 
+            var queueThread = new Thread(_poolWorkQueue.StartThread);
+            queueThread.Start();
+
             var input = string.Empty;
 
             while (!input.Equals("x", StringComparison.CurrentCultureIgnoreCase))
@@ -93,6 +98,9 @@ namespace MiniMiner
 				}
             }
 
+            _poolWorkQueue.Stop();
+            queueThread.Join();
+
             foreach (var w in workers)
                 w.Stop();
 
@@ -100,9 +108,10 @@ namespace MiniMiner
 				t.Join();
         }
 
+        
         public Work GetWork(bool silent = false)
         {
-            return Work.GetWork(this);
+            return _poolWorkQueue.GetWork(this);
         }
 
         public byte[] ParseData()

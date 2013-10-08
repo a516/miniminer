@@ -86,6 +86,7 @@
     <Compile Include="Utils.cs" />
     <Compile Include="Work.cs" />
     <Compile Include="Worker.cs" />
+    <Compile Include="WorkQueue.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

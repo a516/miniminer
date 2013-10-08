@@ -6,20 +6,7 @@ namespace MiniMiner
 {
     public class Work
     {
-        private const int Queuecount = 4;
-        private static readonly Queue<Work> WorkQueue = new Queue<Work>();
-
-        public static Work GetWork(Pool pool)
-        {
-            if (WorkQueue.Count == 0)
-                for (var x = 0; x < Queuecount; ++x)
-                    WorkQueue.Enqueue(new Work(pool.ParseData()));
-
-            WorkQueue.Enqueue(new Work(pool.ParseData()));
-            return WorkQueue.Dequeue();
-        }
-
-        private Work(byte[] data)
+        public Work(byte[] data)
         {
             Data = data;
             Current = (byte[])data.Clone();
