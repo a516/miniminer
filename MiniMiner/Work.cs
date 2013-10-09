@@ -1,19 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Security.Cryptography;
 
 namespace MiniMiner
 {
     public class Work
     {
-		private Pool _pool;
+		private readonly Pool _pool;
 		private readonly SHA256Managed _hasher;
 		private readonly long _ticks;
 		private readonly long _nonceOffset;
 		public byte[] Data;
 		public byte[] Current;
 		public uint Nonce{ get; private set;}
-		string paddedData;
+		string _paddedData;
 
         public Work(Pool pool)
         {
@@ -66,12 +65,12 @@ namespace MiniMiner
 		public void CalculateShare()
 		{
 			var data = Utils.EndianFlip32BitChunks(Utils.ToString(Current));
-			paddedData = Utils.AddPadding(data);
+			_paddedData = Utils.AddPadding(data);
 		}
 
 		public bool SendShare()
 		{
-			return _pool.SendShare (paddedData);
+			return _pool.SendShare (_paddedData);
 		}
     }
 }

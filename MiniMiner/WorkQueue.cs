@@ -1,61 +1,40 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace MiniMiner
 {
     public class WorkQueue
     {
-        private bool stop;
-        private Pool _pool;
-        private const int Queuecount = 8;
-		private object locker;
-        private readonly Queue<Work> _workerQueue = new Queue<Work>();
+        private readonly Pool _pool;
+        private readonly int _queueCount = 1;
+        private readonly ConcurrentQueue<Work> _workerQueue = new ConcurrentQueue<Work>();
 
-        public WorkQueue(Pool pool)
+        public WorkQueue(Pool pool, int queueCount)
         {
-			locker = new object ();
+            _queueCount = queueCount;
             _pool = pool;
+            Parallel.For(0, _queueCount, i=> AddWork());
+            _workerQueue.OnDequeue += OnDequeue;
         }
 
-        public void StartThread()
+        private void OnDequeue(object obj, EventArgs e)
         {
-            for (var x = 0; x < Queuecount; ++x)
-				AddWork();
-
-            while (!stop)
-            {
-                if (_workerQueue.Count < Queuecount)
-					AddWork();
-				
-                Thread.Sleep(10);
-            }
+            AddWork();
         }
 
 		private void AddWork()
 		{
+            /* use in two statement to prevent unnecessary locking */
 			var w = new Work (_pool);
-			lock (locker){
-				_workerQueue.Enqueue (w);
-			}
+            _workerQueue.Enqueue(w);
 		}
-
-        public void Stop()
-        {
-            stop = true;
-        }
 
         public Work GetWork(Pool pool)
         {
-            while (_workerQueue.Count != Queuecount)
+            while (_workerQueue.Count != _queueCount)
                 Thread.Sleep(20);
-			Work w;
-			lock (locker) {
-				w = _workerQueue.Dequeue ();
-			}
-			return w;
+			return _workerQueue.Dequeue();
         }
     }
 }

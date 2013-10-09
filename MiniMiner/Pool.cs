@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -14,6 +15,7 @@ namespace MiniMiner
         public string User;
         public string Password;
         private readonly WorkQueue _poolWorkQueue;
+        private readonly int _threads = Environment.ProcessorCount;
 
         public Pool(string login)
         {
@@ -25,7 +27,7 @@ namespace MiniMiner
             Url = new Uri(url);
             User = user;
             Password = password;
-            _poolWorkQueue = new WorkQueue(this);
+            _poolWorkQueue = new WorkQueue(this, _threads * 2 );
         }
 
         private string InvokeMethod(string method, string paramString = null)
@@ -59,53 +61,17 @@ namespace MiniMiner
 
         public void StartWorkers()
         {
-            var queueThread = new Thread(_poolWorkQueue.StartThread);
-            queueThread.Start();
-			var sendQueue = new SendWorkQueue ();
-			var sendThread = new Thread (sendQueue.StartThread);
-			sendThread.Start ();
-
-			var threads = Environment.ProcessorCount;
 			var workers = new List<Worker>();
 			var tasks = new List<Thread>();
 
-			for (var i = 0; i < threads; ++i)
+			for (var i = 0; i < _threads; ++i)
 			{
 				workers.Add(new Worker(this, i));
 				tasks.Add(new Thread(workers[i].Work));
                 tasks[i].Start();
             }
-            
-            var input = string.Empty;
 
-            while (!input.Equals("x", StringComparison.CurrentCultureIgnoreCase))
-            {
-                input = Console.ReadKey().KeyChar.ToString();
-				switch(input)
-				{
-				case "+":
-					workers.Add(new Worker(this, workers.Count));
-					tasks.Add(new Thread(workers[workers.Count-1].Work) { IsBackground = true });
-					tasks[tasks.Count-1].Start();
-					break;
-				case "-":
-					if (workers.Count > 0)
-					{
-						var id = workers.Count-1;
-						workers[id].Stop();
-						tasks[id].Join();
-						workers.RemoveAt(id);
-						tasks.RemoveAt(id);
-					}
-					break;
-				}
-            }
-
-            _poolWorkQueue.Stop();
-            queueThread.Join();
-
-			sendQueue.Stop ();
-			sendThread.Join ();
+            HandleInput(workers, tasks);
 
             foreach (var w in workers)
                 w.Stop();
@@ -114,6 +80,32 @@ namespace MiniMiner
 				t.Join();
         }
 
+        private void HandleInput(IList<Worker> workers, IList<Thread> tasks)
+        {
+            var input = string.Empty;
+            while (!input.Equals("x", StringComparison.CurrentCultureIgnoreCase))
+            {
+                input = Console.ReadKey().KeyChar.ToString(CultureInfo.InvariantCulture);
+                switch (input)
+                {
+                    case "+":
+                        workers.Add(new Worker(this, workers.Count));
+                        tasks.Add(new Thread(workers[workers.Count - 1].Work) { IsBackground = true });
+                        tasks[tasks.Count - 1].Start();
+                        break;
+                    case "-":
+                        if (workers.Count > 0)
+                        {
+                            var id = workers.Count - 1;
+                            workers[id].Stop();
+                            tasks[id].Join();
+                            workers.RemoveAt(id);
+                            tasks.RemoveAt(id);
+                        }
+                        break;
+                }
+            }
+        }
         
         public Work GetWork(bool silent = false)
         {

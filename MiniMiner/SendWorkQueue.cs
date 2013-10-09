@@ -1,40 +1,25 @@
 using System;
-using System.Collections.Generic;
-using System.Threading;
 
 namespace MiniMiner
 {
-	public class SendWorkQueue
+	public static class SendWorkQueue
 	{
-		private static bool stop;
-		private const int Queuecount = 8;
-		private static readonly Queue<Work> _workerQueue = new Queue<Work>();
-		private static object locker;
+        private static readonly ConcurrentQueue<Work> WorkerQueue = new ConcurrentQueue<Work>();
 		
-		public SendWorkQueue()
+		static SendWorkQueue()
 		{
-			locker = new object ();
+		    WorkerQueue.OnEnqueue += OnEnqueue;
 		}
 
-		public void StartThread()
-		{
-			while (!stop)
-			{
-				while (_workerQueue.Count > 0)
-				{
-					Work w;
-					lock(locker)
-					{
-						w = _workerQueue.Dequeue();
-					}
-					if (w != null)
-						ExecuteShare (w);
-				}
-				Thread.Sleep(100);
-			}
-		}
+        private static void OnEnqueue(object obj, EventArgs e)
+        {
+            /* use in two statement to prevent unnecessary locking */
+            var w = WorkerQueue.Dequeue();
+            if (w != null)
+                ExecuteShare(w);
+        }
 
-		private void ExecuteShare(Work work)
+		private static void ExecuteShare(Work work)
 		{
 			Program.ClearConsole();
 			Program.Print("*** Worker Found Valid Share ***");
@@ -45,17 +30,9 @@ namespace MiniMiner
 			Program.Print(work.SendShare() ? "Server accepted the Share!" : "Server declined the Share!");
 		}
 		
-		public void Stop()
-		{
-			stop = true;
-		}
-		
 		public static void SendShare(Work work)
 		{
-			lock(locker)
-			{
-				_workerQueue.Enqueue (work);
-			}
+			WorkerQueue.Enqueue(work);
 		}
 	}
 }
