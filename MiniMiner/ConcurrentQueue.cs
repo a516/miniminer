@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace MiniMiner
 {
@@ -14,13 +15,13 @@ namespace MiniMiner
         protected virtual void Enqueued(EventArgs e)
         {
             if (OnEnqueue != null)
-                OnEnqueue(this, e);
+                ThreadPool.QueueUserWorkItem(delegate { OnEnqueue(this, e); });
         }
 
         protected virtual void Dequeued(EventArgs e)
         {
             if (OnDequeue != null)
-                OnDequeue(this, e);
+                ThreadPool.QueueUserWorkItem(delegate { OnDequeue(this, e); });
         }
 
         public new T Dequeue()
