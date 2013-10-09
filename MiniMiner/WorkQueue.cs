@@ -14,13 +14,16 @@ namespace MiniMiner
         {
             _queueCount = queueCount;
             _pool = pool;
+            Console.WriteLine("Initializing Queue");
             Parallel.For(0, _queueCount, i=> AddWork());
+            Console.WriteLine("Queue Initialized");
             _workerQueue.OnDequeue += OnDequeue;
         }
 
         private void OnDequeue(object obj, EventArgs e)
         {
             AddWork();
+            Console.WriteLine("Work added, items on queue: {0}", _workerQueue.Count);
         }
 
 		private void AddWork()
@@ -33,7 +36,7 @@ namespace MiniMiner
         public Work GetWork(Pool pool)
         {
             while (_workerQueue.Count != _queueCount)
-                Thread.Sleep(20);
+                Thread.Sleep(50);
 			return _workerQueue.Dequeue();
         }
     }

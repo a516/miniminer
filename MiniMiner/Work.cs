@@ -1,18 +1,21 @@
 ﻿using System;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace MiniMiner
 {
-    public class Work
+    public class Work : IDisposable
     {
-		private readonly Pool _pool;
-		private readonly SHA256Managed _hasher;
+		private Pool _pool;
+		private static SHA256Managed _hasher;
 		private readonly long _ticks;
 		private readonly long _nonceOffset;
 		public byte[] Data;
 		public byte[] Current;
 		public uint Nonce{ get; private set;}
+        public int WorkerID { get; set; }
 		string _paddedData;
+        private uint _batchSize;
 
         public Work(Pool pool)
         {
@@ -23,9 +26,26 @@ namespace MiniMiner
             _hasher = new SHA256Managed();
 			_pool = pool;
         }
-        
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private bool _isDisposed;
+        protected virtual void Dispose(bool isDisposing)
+        {
+            if (!_isDisposed)
+            {
+                _pool = null;
+                _isDisposed = true;
+            }
+        }
+
         internal bool FindShare(uint batchSize)
         {
+            _batchSize = batchSize;
             for(;batchSize > 0; batchSize--)
             {
                 BitConverter.GetBytes(Nonce).CopyTo(Current, _nonceOffset);
@@ -47,7 +67,7 @@ namespace MiniMiner
             return false;
         }
 
-        private byte[] Sha256(byte[] input)
+        private static byte[] Sha256(byte[] input)
         {
             return _hasher.ComputeHash(input, 0, input.Length);
         }
@@ -72,5 +92,22 @@ namespace MiniMiner
 		{
 			return _pool.SendShare (_paddedData);
 		}
+
+        private static DateTime _lastPrint = DateTime.Now;
+        public string GetCurrentStateString()
+        {
+            var sb = new StringBuilder();
+            sb.Append("Worker " + WorkerID + " Data: " + Utils.ToString(Data));
+            sb.Append(
+                string.Concat("Nonce: ",
+                Utils.ToString(Nonce), "/",
+                Utils.ToString(uint.MaxValue), " ",
+                (((double)Nonce / uint.MaxValue) * 100).ToString("F2"), "%"));
+            sb.Append("Hash: " + Utils.ToString(Hash));
+            var span = DateTime.Now - _lastPrint;
+            sb.Append("Speed: " + (int)((_batchSize / 1000) / span.TotalSeconds) + "Kh/s");
+            _lastPrint = DateTime.Now;
+            return sb.ToString();
+        }
     }
 }

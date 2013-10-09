@@ -1,12 +1,11 @@
-using System;
+using System.Threading;
 
 namespace MiniMiner
 {
     public class Worker
     {
         private readonly Pool _pool;
-        private const long MaxAgeTicks = 20000 * TimeSpan.TicksPerMillisecond;
-        Work _work;
+        //private const long MaxAgeTicks = 20000 * TimeSpan.TicksPerMillisecond;
         
         private const uint BatchSize = 100000;
         private readonly int _workerID;
@@ -28,18 +27,23 @@ namespace MiniMiner
 		public void Work()
 		{
 			while (!_shouldStop && _pool != null)
-            {
-                if (_work == null || _work.Age > MaxAgeTicks)
-                    _work = _pool.GetWork();
-
-                if (_work.FindShare(BatchSize))
-                {
-					_work.CalculateShare();
-                    SendWorkQueue.SendShare(_work);
-                    _work = null;
-                }
-                else PrintCurrentState();
-            }
+			{
+			    using (var work = _pool.GetWork())
+			    {
+			        if (work.FindShare(BatchSize))
+			        {
+			            work.CalculateShare();
+			            SendWorkQueue.SendShare(work);
+			        }
+			        else
+			        {
+			            var s = work.GetCurrentStateString();
+                        ThreadPool.QueueUserWorkItem(
+                            delegate { Program.ClearConsole(); Program.Print(s);
+                        });
+			        }
+			    }
+			}
         }
 
         public void Stop()
@@ -48,22 +52,6 @@ namespace MiniMiner
             {
                 _shouldStop = true;
             }
-        }
-
-        private static DateTime _lastPrint = DateTime.Now;
-        private void PrintCurrentState()
-        {
-            Program.ClearConsole();
-			Program.Print("Worker " + _workerID + " Data: " + Utils.ToString(_work.Data));
-            Program.Print(
-                string.Concat("Nonce: ", 
-                Utils.ToString(_work.Nonce), "/", 
-                Utils.ToString(uint.MaxValue), " ", 
-                (((double)_work.Nonce / uint.MaxValue) * 100).ToString("F2"), "%"));
-            Program.Print("Hash: " + Utils.ToString(_work.Hash));
-            var span = DateTime.Now - _lastPrint;
-            Program.Print("Speed: " + (int)((BatchSize / 1000) / span.TotalSeconds) + "Kh/s");
-            _lastPrint = DateTime.Now;
         }
     }
 }

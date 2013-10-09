@@ -1,14 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections;
 using System.Threading;
 
 namespace MiniMiner
 {
     public delegate void QueueEventHandler(object sender, EventArgs e);
-    public class ConcurrentQueue<T>:Queue<T>
+    public class ConcurrentQueue<T>:Queue
     {
-        private readonly object _locker = new object();
-
         public event QueueEventHandler OnEnqueue;
         public event QueueEventHandler OnDequeue;
 
@@ -27,21 +25,25 @@ namespace MiniMiner
         public new T Dequeue()
         {
             T t;
-            lock (_locker)
+            lock (base.SyncRoot)
             {
-                t = base.Dequeue();
+                t = (T)base.Dequeue();
             }
             Dequeued(null);
             return t;
         }
 
-        public new void Enqueue(T toAdd)
+        public void Enqueue(T toAdd)
         {
-            lock (_locker)
+            lock (base.SyncRoot)
             {
                 base.Enqueue(toAdd);
             }
             Enqueued(null);
+        }
+
+        public new void Enqueue(object toAdd)
+        {
         }
     }
 }

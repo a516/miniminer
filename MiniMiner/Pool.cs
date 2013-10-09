@@ -106,7 +106,7 @@ namespace MiniMiner
                 }
             }
         }
-        
+
         public Work GetWork(bool silent = false)
         {
             return _poolWorkQueue.GetWork(this);
