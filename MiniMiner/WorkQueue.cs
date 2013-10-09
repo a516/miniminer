@@ -10,26 +10,37 @@ namespace MiniMiner
     {
         private bool stop;
         private Pool _pool;
-        private const int Queuecount = 4;
+        private const int Queuecount = 8;
+		private object locker;
         private readonly Queue<Work> _workerQueue = new Queue<Work>();
 
         public WorkQueue(Pool pool)
         {
+			locker = new object ();
             _pool = pool;
         }
 
         public void StartThread()
         {
             for (var x = 0; x < Queuecount; ++x)
-                _workerQueue.Enqueue(new Work(_pool.ParseData()));
+				AddWork();
 
             while (!stop)
             {
                 if (_workerQueue.Count < Queuecount)
-                    _workerQueue.Enqueue(new Work(_pool.ParseData()));
-                Thread.Sleep(100);
+					AddWork();
+				
+                Thread.Sleep(10);
             }
         }
+
+		private void AddWork()
+		{
+			var w = new Work (_pool);
+			lock (locker){
+				_workerQueue.Enqueue (w);
+			}
+		}
 
         public void Stop()
         {
@@ -38,9 +49,13 @@ namespace MiniMiner
 
         public Work GetWork(Pool pool)
         {
-            while (_workerQueue.Count == 0)
-                Thread.Sleep(100);
-            return _workerQueue.Dequeue();
+            while (_workerQueue.Count != Queuecount)
+                Thread.Sleep(20);
+			Work w;
+			lock (locker) {
+				w = _workerQueue.Dequeue ();
+			}
+			return w;
         }
     }
 }

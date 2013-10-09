@@ -6,26 +6,30 @@ namespace MiniMiner
 {
     public class Work
     {
-        public Work(byte[] data)
+		private Pool _pool;
+		private readonly SHA256Managed _hasher;
+		private readonly long _ticks;
+		private readonly long _nonceOffset;
+		public byte[] Data;
+		public byte[] Current;
+		public uint Nonce{ get; private set;}
+		string paddedData;
+
+        public Work(Pool pool)
         {
-            Data = data;
-            Current = (byte[])data.Clone();
+            Data = pool.ParseData();
+            Current = (byte[])Data.Clone();
             _nonceOffset = Data.Length - 4;
             _ticks = DateTime.Now.Ticks;
             _hasher = new SHA256Managed();
+			_pool = pool;
         }
-
-        private readonly SHA256Managed _hasher;
-        private readonly long _ticks;
-        private readonly long _nonceOffset;
-        public byte[] Data;
-        public byte[] Current;
-
-        internal bool FindShare(ref uint nonce, uint batchSize)
+        
+        internal bool FindShare(uint batchSize)
         {
             for(;batchSize > 0; batchSize--)
             {
-                BitConverter.GetBytes(nonce).CopyTo(Current, _nonceOffset);
+                BitConverter.GetBytes(Nonce).CopyTo(Current, _nonceOffset);
                 var doubleHash = Sha256(Sha256(Current));
 
                 var zeroBytes = 0; /* count trailing bytes that are zero */
@@ -38,8 +42,8 @@ namespace MiniMiner
                     return true;
 
                 //increase
-                if(++nonce == uint.MaxValue)
-                    nonce = 0;
+                if(++Nonce == uint.MaxValue)
+                    Nonce = 0;
             }
             return false;
         }
@@ -58,5 +62,16 @@ namespace MiniMiner
         {
             get { return DateTime.Now.Ticks - _ticks; }
         }
+
+		public void CalculateShare()
+		{
+			var data = Utils.EndianFlip32BitChunks(Utils.ToString(Current));
+			paddedData = Utils.AddPadding(data);
+		}
+
+		public bool SendShare()
+		{
+			return _pool.SendShare (paddedData);
+		}
     }
 }

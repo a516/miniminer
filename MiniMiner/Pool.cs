@@ -61,6 +61,9 @@ namespace MiniMiner
         {
             var queueThread = new Thread(_poolWorkQueue.StartThread);
             queueThread.Start();
+			var sendQueue = new SendWorkQueue ();
+			var sendThread = new Thread (sendQueue.StartThread);
+			sendThread.Start ();
 
 			var threads = Environment.ProcessorCount;
 			var workers = new List<Worker>();
@@ -72,7 +75,6 @@ namespace MiniMiner
 				tasks.Add(new Thread(workers[i].Work));
                 tasks[i].Start();
             }
-
             
             var input = string.Empty;
 
@@ -101,6 +103,9 @@ namespace MiniMiner
 
             _poolWorkQueue.Stop();
             queueThread.Join();
+
+			sendQueue.Stop ();
+			sendThread.Join ();
 
             foreach (var w in workers)
                 w.Stop();
@@ -132,10 +137,8 @@ namespace MiniMiner
             throw new Exception("Didn't find valid 'data' in Server Response");
         }
 
-        public bool SendShare(byte[] share)
+        public bool SendShare(string paddedData)
         {
-            var data = Utils.EndianFlip32BitChunks(Utils.ToString(share));
-            var paddedData = Utils.AddPadding(data);
             var jsonReply = InvokeMethod("getwork", paddedData);
             var match = Regex.Match(jsonReply, "\"result\": true");
             return match.Success;
