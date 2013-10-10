@@ -61,7 +61,7 @@ namespace MiniMiner
                     return true;
 
                 //increase
-                if(++Nonce == uint.MaxValue)
+                if (++Nonce == uint.MaxValue)
                     Nonce = 0;
             }
             return false;
@@ -97,15 +97,15 @@ namespace MiniMiner
         public string GetCurrentStateString()
         {
             var sb = new StringBuilder();
-            sb.Append("Worker " + WorkerID + " Data: " + Utils.ToString(Data));
+            sb.Append("Worker " + WorkerID + " Data: " + Utils.ToString(Data) + "\r\n");
             sb.Append(
                 string.Concat("Nonce: ",
                 Utils.ToString(Nonce), "/",
                 Utils.ToString(uint.MaxValue), " ",
-                (((double)Nonce / uint.MaxValue) * 100).ToString("F2"), "%"));
-            sb.Append("Hash: " + Utils.ToString(Hash));
+                (((double)Nonce / uint.MaxValue) * 100).ToString("F2"), "% \r\n"));
+            sb.Append("Hash: " + Utils.ToString(Hash) + "\r\n");
             var span = DateTime.Now - _lastPrint;
-            sb.Append("Speed: " + (int)((_batchSize / 1000) / span.TotalSeconds) + "Kh/s");
+            sb.Append("Speed: " + (int)((_batchSize / 1000) / span.TotalSeconds) + "Kh/s \r\n");
             _lastPrint = DateTime.Now;
             return sb.ToString();
         }

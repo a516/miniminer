@@ -1,10 +1,12 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Text;
 
 namespace MiniMiner
 {
     public static class Utils
     {
+
         public static byte[] ToBytes(string input)
         {
             var bytes = new byte[input.Length / 2];

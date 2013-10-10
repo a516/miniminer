@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 
 namespace MiniMiner
@@ -5,7 +6,7 @@ namespace MiniMiner
     public class Worker
     {
         private readonly Pool _pool;
-        //private const long MaxAgeTicks = 20000 * TimeSpan.TicksPerMillisecond;
+        private const long MaxAgeTicks = 20000 * TimeSpan.TicksPerMillisecond;
         
         private const uint BatchSize = 100000;
         private readonly int _workerID;
@@ -26,25 +27,25 @@ namespace MiniMiner
 		
 		public void Work()
 		{
+            Work work = null;
 			while (!_shouldStop && _pool != null)
 			{
-			    using (var work = _pool.GetWork())
+                if (work == null || work.Age > MaxAgeTicks)
+			        work = _pool.GetWork();
+
+                if (work.FindShare(BatchSize))
+                {
+                    work.CalculateShare();
+			        SendWorkQueue.SendShare(work);
+                    work = null;
+                }
+			    else
 			    {
-			        if (work.FindShare(BatchSize))
-			        {
-			            work.CalculateShare();
-			            SendWorkQueue.SendShare(work);
-			        }
-			        else
-			        {
-			            var s = work.GetCurrentStateString();
-                        ThreadPool.QueueUserWorkItem(
-                            delegate { Program.ClearConsole(); Program.Print(s);
-                        });
-			        }
+                    var s = work.GetCurrentStateString();
+			        ThreadPool.QueueUserWorkItem(delegate { Program.ClearConsole(); Program.Print(s); });
 			    }
 			}
-        }
+		}
 
         public void Stop()
         {

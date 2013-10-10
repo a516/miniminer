@@ -81,6 +81,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConcurrentQueue.cs" />
+    <Compile Include="MidStateModule.cs" />
     <Compile Include="Pool.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
