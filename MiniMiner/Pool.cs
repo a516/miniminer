@@ -27,7 +27,7 @@ namespace MiniMiner
             Url = new Uri(url);
             User = user;
             Password = password;
-            _poolWorkQueue = new WorkQueue(this, _threads * 2 );
+            _poolWorkQueue = new WorkQueue(this, _threads);
         }
 
         private string InvokeMethod(string method, string paramString = null)
