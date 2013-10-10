@@ -33,6 +33,7 @@ namespace MiniMiner
                 if (work == null || work.Age > MaxAgeTicks)
 			        work = _pool.GetWork();
 
+				work.WorkerID = _workerID;
                 if (work.FindShare(BatchSize))
                 {
                     work.CalculateShare();

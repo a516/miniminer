@@ -7,7 +7,7 @@ namespace MiniMiner
         private class Sha256StateT
         {
             internal uint[] h;
-            private byte[] _b = new byte[32];
+            //private byte[] _b = new byte[32];
 
             public Sha256StateT()
             {

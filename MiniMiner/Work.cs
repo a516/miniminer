@@ -7,7 +7,7 @@ namespace MiniMiner
     public class Work : IDisposable
     {
 		private Pool _pool;
-		private static SHA256Managed _hasher;
+		private SHA256Managed _hasher;
 		private readonly long _ticks;
 		private readonly long _nonceOffset;
 		public byte[] Data;
@@ -67,7 +67,7 @@ namespace MiniMiner
             return false;
         }
 
-        private static byte[] Sha256(byte[] input)
+        private byte[] Sha256(byte[] input)
         {
             return _hasher.ComputeHash(input, 0, input.Length);
         }
