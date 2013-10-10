@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace MiniMiner
 {
@@ -10,9 +11,9 @@ namespace MiniMiner
         
         private const uint BatchSize = 100000;
         private readonly int _workerID;
-        private uint _nonce;
         private readonly object _locker = new object();
         private bool _shouldStop;
+        private readonly int _workThreads = Environment.ProcessorCount;
 
         public Worker(Pool pool, int workerID)
         {
@@ -26,27 +27,49 @@ namespace MiniMiner
 		}
 		
 		public void Work()
-		{
-            Work work = null;
-			while (!_shouldStop && _pool != null)
-			{
-                if (work == null || work.Age > MaxAgeTicks)
-			        work = _pool.GetWork();
+        {
+		    while ( _pool != null )
+            {
+                var work = new Work[_workThreads];
 
-				work.WorkerID = _workerID;
-                if (work.FindShare(ref _nonce, BatchSize))
-                {
-                    work.CalculateShare(_nonce);
-			        SendWorkQueue.SendShare(work);
-                    work = null;
-                }
-			    else
-			    {
-                    var s = work.GetCurrentStateString(_nonce);
-			        ThreadPool.QueueUserWorkItem(delegate { Program.ClearConsole(); Program.Print(s); });
-			    }
-			}
-		}
+                if (work[0] == null || work[0].Age > MaxAgeTicks)
+                    work[0] = _pool.GetWork();
+
+                work[0].WorkerID = _workerID;
+                /* Clone work */
+                for (var y = 1; y < _workThreads; ++y)
+                    work[y] = new Work(work[0]);
+
+                /* fire off work in separate threads */
+                Parallel.For((long) 0, _workThreads, x =>
+                    {
+                        var nonce = (uint) x;
+                        while (!_shouldStop && work != null)
+                        {
+                            if (work[x].LookForShare(nonce, BatchSize))
+                            {
+                                work[x].CalculateShare(nonce);
+                                SendWorkQueue.SendShare(work[x]);
+                                work = null;
+                            }
+                            else
+                            {
+                                var s = work[x].GetCurrentStateString(nonce);
+                                ThreadPool.QueueUserWorkItem(delegate
+                                    {
+                                        Program.ClearConsole();
+                                        Program.Print(s);
+                                    });
+                            }
+
+                            //increase nonce
+                            if (uint.MaxValue - _workThreads < nonce)
+                                nonce = (uint.MaxValue% (uint)x);
+                            else nonce += (uint)x;
+                        }
+                    });
+            }
+        }
 
         public void Stop()
         {

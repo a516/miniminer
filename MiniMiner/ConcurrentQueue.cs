@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections;
-using System.ComponentModel;
-using System.Threading;
 
 namespace MiniMiner
 {
@@ -19,20 +17,8 @@ namespace MiniMiner
 
         protected virtual void Dequeued(EventArgs e)
         {
-
             if (OnDequeue != null)
                 OnDequeue.BeginInvoke(this, null, null, null);
-        }
-
-        public static void Invoke(ISynchronizeInvoke sync, Action action)
-        {
-            if (!sync.InvokeRequired)
-                action();
-            else
-            {
-                var args = new object[] { };
-                sync.Invoke(action, args);
-            }
         }
 
         public new T Dequeue()
@@ -55,6 +41,10 @@ namespace MiniMiner
             Enqueued(null);
         }
 
-        public new void Enqueue(object toAdd) { }
+        /// <summary>
+        /// Function is disabled to prevent unsafe type usage.
+        /// </summary>
+        /// <param name="toAdd"></param>
+        public override void Enqueue(object toAdd) { }
     }
 }

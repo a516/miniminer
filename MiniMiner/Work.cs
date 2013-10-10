@@ -26,6 +26,15 @@ namespace MiniMiner
 			_pool = pool;
         }
 
+        public Work(Work work)
+        {
+            Data = (byte[])work.Data.Clone();
+            Current = (byte[])work.Current.Clone();
+            _nonceOffset = work._nonceOffset;
+            _ticks = work._ticks;
+            _pool = work._pool;
+        }
+
         public void Dispose()
         {
             Dispose(true);
@@ -42,7 +51,7 @@ namespace MiniMiner
             }
         }
 
-        internal bool FindShare(ref uint nonce, uint batchSize)
+        internal bool LookForShare(uint nonce, uint batchSize)
         {
             _batchSize = batchSize;
             for(;batchSize > 0; batchSize--)
@@ -58,10 +67,6 @@ namespace MiniMiner
                 //standard share difficulty matched! (target:ffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000)
                 if(zeroBytes == 4)
                     return true;
-
-                //increase
-                if (++nonce == uint.MaxValue)
-                    nonce = 0;
             }
             return false;
         }
