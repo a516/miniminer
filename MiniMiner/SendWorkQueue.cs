@@ -30,7 +30,7 @@ namespace MiniMiner
 			Program.ClearConsole();
             sb.Append("*** Worker Found Valid Share ***");
 			sb.Append("Share: " + Utils.ToString(work.Current));
-            sb.Append("Nonce: " + Utils.ToString(work.Nonce));
+            sb.Append("Nonce: " + Utils.ToString(work.FinalNonce));
             sb.Append("Hash: " + Utils.ToString(work.Hash));
             sb.Append("Sending Share to Pool...");
             sb.Append(result ? "Server accepted the Share!" : "Server declined the Share!");

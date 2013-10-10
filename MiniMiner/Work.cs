@@ -7,12 +7,12 @@ namespace MiniMiner
     public class Work : IDisposable
     {
 		private Pool _pool;
-		private SHA256Managed _hasher;
+		private static readonly SHA256Managed Hasher = new SHA256Managed();
 		private readonly long _ticks;
 		private readonly long _nonceOffset;
 		public byte[] Data;
 		public byte[] Current;
-		public uint Nonce{ get; private set;}
+		public uint FinalNonce{ get; private set;}
         public int WorkerID { get; set; }
 		string _paddedData;
         private uint _batchSize;
@@ -23,7 +23,6 @@ namespace MiniMiner
             Current = (byte[])Data.Clone();
             _nonceOffset = Data.Length - 4;
             _ticks = DateTime.Now.Ticks;
-            _hasher = new SHA256Managed();
 			_pool = pool;
         }
 
@@ -43,12 +42,12 @@ namespace MiniMiner
             }
         }
 
-        internal bool FindShare(uint batchSize)
+        internal bool FindShare(ref uint nonce, uint batchSize)
         {
             _batchSize = batchSize;
             for(;batchSize > 0; batchSize--)
             {
-                BitConverter.GetBytes(Nonce).CopyTo(Current, _nonceOffset);
+                BitConverter.GetBytes(nonce).CopyTo(Current, _nonceOffset);
                 var doubleHash = Sha256(Sha256(Current));
 
                 var zeroBytes = 0; /* count trailing bytes that are zero */
@@ -61,15 +60,15 @@ namespace MiniMiner
                     return true;
 
                 //increase
-                if (++Nonce == uint.MaxValue)
-                    Nonce = 0;
+                if (++nonce == uint.MaxValue)
+                    nonce = 0;
             }
             return false;
         }
 
-        private byte[] Sha256(byte[] input)
+        private static byte[] Sha256(byte[] input)
         {
-            return _hasher.ComputeHash(input, 0, input.Length);
+            return Hasher.ComputeHash(input, 0, input.Length);
         }
 
         public byte[] Hash
@@ -82,8 +81,9 @@ namespace MiniMiner
             get { return DateTime.Now.Ticks - _ticks; }
         }
 
-		public void CalculateShare()
+		public void CalculateShare(uint nonce)
 		{
+		    FinalNonce = nonce;
 			var data = Utils.EndianFlip32BitChunks(Utils.ToString(Current));
 			_paddedData = Utils.AddPadding(data);
 		}
@@ -94,15 +94,15 @@ namespace MiniMiner
 		}
 
         private static DateTime _lastPrint = DateTime.Now;
-        public string GetCurrentStateString()
+        public string GetCurrentStateString(uint nonce)
         {
             var sb = new StringBuilder();
             sb.Append("Worker " + WorkerID + " Data: " + Utils.ToString(Data) + "\r\n");
             sb.Append(
                 string.Concat("Nonce: ",
-                Utils.ToString(Nonce), "/",
+                Utils.ToString(nonce), "/",
                 Utils.ToString(uint.MaxValue), " ",
-                (((double)Nonce / uint.MaxValue) * 100).ToString("F2"), "% \r\n"));
+                (((double)nonce / uint.MaxValue) * 100).ToString("F2"), "% \r\n"));
             sb.Append("Hash: " + Utils.ToString(Hash) + "\r\n");
             var span = DateTime.Now - _lastPrint;
             sb.Append("Speed: " + (int)((_batchSize / 1000) / span.TotalSeconds) + "Kh/s \r\n");

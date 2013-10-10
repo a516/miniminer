@@ -10,7 +10,7 @@ namespace MiniMiner
         
         private const uint BatchSize = 100000;
         private readonly int _workerID;
-
+        private uint _nonce;
         private readonly object _locker = new object();
         private bool _shouldStop;
 
@@ -34,15 +34,15 @@ namespace MiniMiner
 			        work = _pool.GetWork();
 
 				work.WorkerID = _workerID;
-                if (work.FindShare(BatchSize))
+                if (work.FindShare(ref _nonce, BatchSize))
                 {
-                    work.CalculateShare();
+                    work.CalculateShare(_nonce);
 			        SendWorkQueue.SendShare(work);
                     work = null;
                 }
 			    else
 			    {
-                    var s = work.GetCurrentStateString();
+                    var s = work.GetCurrentStateString(_nonce);
 			        ThreadPool.QueueUserWorkItem(delegate { Program.ClearConsole(); Program.Print(s); });
 			    }
 			}
