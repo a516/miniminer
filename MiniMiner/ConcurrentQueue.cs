@@ -12,7 +12,7 @@ namespace MiniMiner
         protected virtual void Enqueued(EventArgs e)
         {
             if (OnEnqueue != null)
-                OnDequeue.BeginInvoke(this, null, null, null);
+                OnEnqueue.BeginInvoke(this, null, null, null);
         }
 
         protected virtual void Dequeued(EventArgs e)

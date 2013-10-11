@@ -15,7 +15,7 @@ namespace MiniMiner
         public string User;
         public string Password;
         private readonly WorkQueue _poolWorkQueue;
-        private readonly int _threads = Environment.ProcessorCount;
+        private readonly int _threads = 1;//Environment.ProcessorCount;
 
         public Pool(string login)
         {
@@ -30,7 +30,7 @@ namespace MiniMiner
             _poolWorkQueue = new WorkQueue(this, _threads);
         }
 
-        private string InvokeMethod(string method, string paramString = null)
+        protected virtual string InvokeMethod(string method, string paramString = null)
         {
             var webRequest = (HttpWebRequest)WebRequest.Create(Url);
             webRequest.Credentials = new NetworkCredential(User, Password);
@@ -71,7 +71,8 @@ namespace MiniMiner
                 tasks[i].Start();
             }
 
-            HandleInput(workers, tasks);
+            if (!Worker.isTesting)
+                HandleInput(workers, tasks);
 
             foreach (var w in workers)
                 w.Stop();
@@ -129,7 +130,7 @@ namespace MiniMiner
             throw new Exception("Didn't find valid 'data' in Server Response");
         }
 
-        public bool SendShare(string paddedData)
+        public virtual bool SendShare(string paddedData, uint nonce)
         {
             var jsonReply = InvokeMethod("getwork", paddedData);
             var match = Regex.Match(jsonReply, "\"result\": true");

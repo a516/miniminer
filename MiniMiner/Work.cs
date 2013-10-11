@@ -7,14 +7,14 @@ namespace MiniMiner
     public class Work : IDisposable
     {
 		private Pool _pool;
-		private SHA256Managed Hasher = new SHA256Managed();
+		private readonly SHA256Managed Hasher = new SHA256Managed();
 		private readonly long _ticks;
 		private readonly long _nonceOffset;
 		public byte[] Data;
 		public byte[] Current;
-		public uint FinalNonce{ get; private set;}
+		public uint FinalNonce{ get; set;}
         public int WorkerID { get; set; }
-		string _paddedData;
+        private string _paddedData;
         private uint _batchSize;
 
         public Work(Pool pool)
@@ -29,7 +29,7 @@ namespace MiniMiner
 
         public Work(Work work)
         {
-            Data = (byte[])work.Data.Clone();
+            Data = work.Data;
             Current = (byte[])work.Current.Clone();
             _nonceOffset = work._nonceOffset;
             _ticks = work._ticks;
@@ -52,7 +52,7 @@ namespace MiniMiner
             }
         }
 
-        internal bool LookForShare(uint nonce, uint batchSize)
+        internal bool LookForShare(ref uint nonce, uint batchSize, int x)
         {
             _batchSize = batchSize;
             for(;batchSize > 0; batchSize--)
@@ -68,6 +68,11 @@ namespace MiniMiner
                 //standard share difficulty matched! (target:ffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000)
                 if(zeroBytes == 4)
                     return true;
+
+                if ((uint.MaxValue - x) < nonce)
+                    nonce = uint.MaxValue % (uint)x;
+                else
+                    nonce += (uint)x;
             }
             return false;
         }
@@ -89,14 +94,13 @@ namespace MiniMiner
 
 		public void CalculateShare(uint nonce)
 		{
-		    FinalNonce = nonce;
 			var data = Utils.EndianFlip32BitChunks(Utils.ToString(Current));
 			_paddedData = Utils.AddPadding(data);
 		}
 
 		public bool SendShare()
 		{
-			return _pool.SendShare (_paddedData);
+			return _pool.SendShare (_paddedData, FinalNonce);
 		}
 
         private static DateTime _lastPrint = DateTime.Now;

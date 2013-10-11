@@ -25,35 +25,38 @@ namespace MiniMiner
 			Program.Print("User: " + _pool.User);
 			Program.Print("Password: " + _pool.Password);
 		}
-		
+
+        public static bool isTesting = false;
 		public void Work()
         {
-		    while ( _pool != null )
-            {
+            //while (_pool != null && !_shouldStop)
+            //{
                 var work = new Work[_workThreads];
 
                 if (work[0] == null || work[0].Age > MaxAgeTicks)
                     work[0] = _pool.GetWork();
 
-                work[0].WorkerID = _workerID;
+                work[0].WorkerID = 0;
                 /* Clone work */
                 for (var y = 1; y < _workThreads; ++y)
-                    work[y] = new Work(work[0]);
+                    work[y] = new Work(work[0]) {WorkerID = y};
 
                 /* fire off work in separate threads */
-                Parallel.For((long) 0, _workThreads, x =>
+                for(var x = 0; x <_workThreads; x++) 
                     {
                         var nonce = (uint) x;
-                        while (!_shouldStop && work != null)
+                        while (!_shouldStop && work != null && (isTesting && nonce <= 7100000))
                         {
-                            if (work[x].LookForShare(nonce, BatchSize))
+                            if (work[x].LookForShare(ref nonce, BatchSize, _workThreads))
                             {
+                                work[x].FinalNonce = nonce;
                                 work[x].CalculateShare(nonce);
                                 SendWorkQueue.SendShare(work[x]);
                                 work = null;
                             }
                             else
                             {
+                                work[x].FinalNonce = nonce;
                                 var s = work[x].GetCurrentStateString(nonce);
                                 ThreadPool.QueueUserWorkItem(delegate
                                     {
@@ -62,13 +65,15 @@ namespace MiniMiner
                                     });
                             }
 
-                            //increase nonce
-                            if (uint.MaxValue - _workThreads < nonce)
-                                nonce = (uint.MaxValue% (uint)x);
-                            else nonce += (uint)x;
+                            if (isTesting)
+                            {
+                                work[x].FinalNonce = nonce;
+                                work[x].CalculateShare(nonce);
+                                SendWorkQueue.SendShare(work[x]);
+                            }
                         }
-                    });
-            }
+                    };
+            //}
         }
 
         public void Stop()
